@@ -2,17 +2,17 @@
 use ExtUtils::MakeMaker;
 WriteMakefile
 (
+          'PL_FILES' => {},
+          'INSTALLDIRS' => 'site',
           'NAME' => 'Parse::BACKPAN::Packages',
           'VERSION_FROM' => 'lib/Parse/BACKPAN/Packages.pm',
           'PREREQ_PM' => {
-                           'CPAN::DistnameInfo' => '0',
-                           'Class::Accessor::Fast' => '0',
-                           'Compress::Zlib' => '0',
-                           'IO::Zlib' => '0',
+                           'Test::More' => '0',
                            'LWP::UserAgent' => '0',
-                           'Test::More' => '0'
-                         },
-          'INSTALLDIRS' => 'site',
-          'PL_FILES' => {}
+                           'IO::Zlib' => '0',
+                           'Compress::Zlib' => '0',
+                           'Class::Accessor::Fast' => '0',
+                           'CPAN::DistnameInfo' => '0'
+                         }
         )
 ;

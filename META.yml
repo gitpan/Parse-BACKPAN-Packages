@@ -1,6 +1,6 @@
---- #YAML:1.0
+---
 name: Parse-BACKPAN-Packages
-version: 0.29
+version: 0.30
 author:
   - Leon Brocard <acme@astray.com>
 abstract: Provide an index of BACKPAN
@@ -15,9 +15,9 @@ requires:
 provides:
   Parse::BACKPAN::Packages:
     file: lib/Parse/BACKPAN/Packages.pm
-    version: 0.29
+    version: 0.30
   Parse::BACKPAN::Packages::Distribution:
     file: lib/Parse/BACKPAN/Packages/Distribution.pm
   Parse::BACKPAN::Packages::File:
     file: lib/Parse/BACKPAN/Packages/File.pm
-generated_by: Module::Build version 0.2605
+generated_by: Module::Build version 0.261

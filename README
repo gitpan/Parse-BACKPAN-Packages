@@ -14,6 +14,9 @@ SYNOPSIS
 
       # see Parse::BACKPAN::Packages::Distribution
       my @acme_colours = $p->distributions("Acme-Colour");
+  
+      my @authors = $p->authors;
+      my @acmes = $p->distributions_by('LBROCARD');
 
 DESCRIPTION
     The Comprehensive Perl Archive Network (CPAN) is a very useful
@@ -31,12 +34,24 @@ METHODS
 
       my $p = Parse::BACKPAN::Packages->new();
 
+  authors
+    The authors method returns a list of all the authors. This is meant so
+    that you can pass them into the distributions_by method:
+
+      my @authors = $p->authors;
+
   distributions
     The distributions method returns a list of objects representing all the
     different versions of a distribution:
 
       # see Parse::BACKPAN::Packages::Distribution
       my @acme_colours = $p->distributions("Acme-Colour");
+
+  distributions_by
+    The distributions_by method returns a list of distribution names
+    representing all the distributions that an author has uploaded:
+
+      my @acmes = $p->distributions_by('LBROCARD');
 
   file
     The file method finds metadata relating to a file:

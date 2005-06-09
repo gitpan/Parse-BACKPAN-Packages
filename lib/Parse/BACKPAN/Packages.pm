@@ -1,7 +1,7 @@
 package Parse::BACKPAN::Packages;
 use strict;
 use base qw( Class::Accessor::Fast );
-__PACKAGE__->mk_accessors(qw( data files ));
+__PACKAGE__->mk_accessors(qw( data files dist_by_data ));
 use CPAN::DistnameInfo;
 use Compress::Zlib;
 use IO::File;
@@ -10,29 +10,29 @@ use LWP::UserAgent;
 use Parse::BACKPAN::Packages::File;
 use Parse::BACKPAN::Packages::Distribution;
 use vars qw($VERSION);
-$VERSION = '0.29';
+$VERSION = '0.30';
 
 sub new {
-  my $class = shift;
+  my $class    = shift;
   my $filename = shift;
 
   my $self = {};
   bless $self, $class;
 
   if ($filename) {
-    my $fh = IO::Zlib->new($filename, "rb") || 
-      die "Failed to read $filename: $!";
+    my $fh = IO::Zlib->new($filename, "rb")
+      || die "Failed to read $filename: $!";
     $self->data(join '', <$fh>);
     $fh->close;
   } else {
     my $url = "http://www.astray.com/tmp/backpan.txt.gz";
-    my $ua = LWP::UserAgent->new;
+    my $ua  = LWP::UserAgent->new;
     $ua->timeout(180);
     my $response = $ua->get($url);
 
     if ($response->is_success) {
       my $gzipped = $response->content;
-       my $data = Compress::Zlib::memGunzip($gzipped);
+      my $data    = Compress::Zlib::memGunzip($gzipped);
       die "Error uncompressing data from $url" unless $data;
       $self->data($data);
     } else {
@@ -49,7 +49,7 @@ sub _parse {
   my %files;
 
   foreach my $line (split "\n", $self->data) {
-    my($prefix, $date, $size) = split ' ', $line;
+    my ($prefix, $date, $size) = split ' ', $line;
     next unless $size;
     my $file = Parse::BACKPAN::Packages::File->new;
     $file->prefix($prefix);
@@ -61,17 +61,17 @@ sub _parse {
 }
 
 sub file {
-  my($self, $prefix) = @_;
+  my ($self, $prefix) = @_;
   return $self->files->{$prefix};
 }
 
 sub distributions {
-  my($self, $name) = @_;
+  my ($self, $name) = @_;
   my @files;
 
-  foreach my $file (values %{$self->files}) {
+  while (my ($prefix, $file) = each %{ $self->files }) {
     my $prefix = $file->prefix;
-    next unless $prefix =~ /$name/;
+    next unless $prefix =~ m{\/$name-};
     next if $prefix =~ /\.(readme|meta)$/;
     push @files, $file;
   }
@@ -80,12 +80,13 @@ sub distributions {
 
   my @dists;
   foreach my $file (@files) {
-    my $d = Parse::BACKPAN::Packages::Distribution->new;
     my $i = CPAN::DistnameInfo->new($file->prefix);
-    next if $i->dist ne $name;
+    my $dist = $i->dist;
+    next unless $dist eq $name;
+    my $d = Parse::BACKPAN::Packages::Distribution->new;
     $d->prefix($file->prefix);
     $d->date($file->date);
-    $d->dist($i->dist);
+    $d->dist($dist);
     $d->version($i->version);
     $d->maturity($i->maturity);
     $d->filename($i->filename);
@@ -97,11 +98,57 @@ sub distributions {
   return @dists;
 }
 
+sub distributions_by {
+  my ($self, $author) = @_;
+
+  my $dist_by = $self->_dist_by;
+
+  my @dists = @{ $dist_by->{$author} };
+  return sort @dists;
+}
+
+sub authors {
+  my $self    = shift;
+  my $dist_by = $self->_dist_by;
+  return sort keys %$dist_by;
+}
+
+sub _dist_by {
+  my ($self) = shift;
+  return $self->dist_by_data if $self->dist_by_data;
+
+  my @files;
+
+  while (my ($prefix, $file) = each %{ $self->files }) {
+    my $prefix = $file->prefix;
+    next if $prefix =~ /\.(readme|meta)$/;
+    push @files, $file;
+  }
+
+  @files = sort { $a->date <=> $b->date } @files;
+
+  my $dist_by;
+  foreach my $file (@files) {
+    my $i = CPAN::DistnameInfo->new($file->prefix);
+    my ($dist, $cpanid) = ($i->dist, $i->cpanid);
+    next unless $dist && $cpanid;
+    $dist_by->{$dist} = $cpanid;
+  }
+
+  my $dists_by;
+  while (my ($dist, $by) = each %$dist_by) {
+    push @{ $dists_by->{$by} }, $dist;
+  }
+
+  $self->dist_by_data($dists_by);
+  return $dists_by;
+}
+
 sub size {
   my $self = shift;
   my $size;
 
-  foreach my $file (values %{$self->files}) {
+  foreach my $file (values %{ $self->files }) {
     $size += $file->size;
   }
   return $size;
@@ -129,6 +176,9 @@ Parse::BACKPAN::Packages - Provide an index of BACKPAN
 
   # see Parse::BACKPAN::Packages::Distribution
   my @acme_colours = $p->distributions("Acme-Colour");
+  
+  my @authors = $p->authors;
+  my @acmes = $p->distributions_by('LBROCARD');
 
 =head1 DESCRIPTION
 
@@ -149,6 +199,13 @@ so it might take a while to run:
 
   my $p = Parse::BACKPAN::Packages->new();
 
+=head2 authors
+
+The authors method returns a list of all the authors. This is meant so
+that you can pass them into the distributions_by method:
+
+  my @authors = $p->authors;
+
 =head2 distributions
 
 The distributions method returns a list of objects representing all
@@ -156,6 +213,13 @@ the different versions of a distribution:
 
   # see Parse::BACKPAN::Packages::Distribution
   my @acme_colours = $p->distributions("Acme-Colour");
+
+=head2 distributions_by
+
+The distributions_by method returns a list of distribution names
+representing all the distributions that an author has uploaded:
+
+  my @acmes = $p->distributions_by('LBROCARD');
 
 =head2 file
 

@@ -1,7 +1,7 @@
 #!perl
 use strict;
 use warnings;
-use Test::More tests => 30;
+use Test::More tests => 85;
 use lib 'lib';
 use_ok("Parse::BACKPAN::Packages");
 
@@ -44,5 +44,79 @@ is($acme_colours[-1]->maturity, "released");
 is($acme_colours[-1]->prefix, "authors/id/L/LB/LBROCARD/Acme-Colour-1.02.tar.gz");
 is($acme_colours[-1]->version, "1.02");
 
-# use YAML; warn Dump \@acme_colours;
+my @acmes = $p->distributions_by('LBROCARD');
+foreach my $dist (
+          'Acme-Colour',
+          'Buffy',
+          'CPAN-IndexPod',
+          'CPAN-Metadata-RDF',
+          'CPAN-Unpack',
+          'CPAN-WWW-Testers',
+          'CPAN-WWW-Testers-Generator',
+          'Data-Page',
+          'DateTime-Stringify',
+          'Devel-ebug',
+          'Functional',
+          'Games-GuessWord',
+          'GraphViz',
+          'HTML-Fraction',
+          'HTTP-Server-Simple-Kwiki',
+          'Haul',
+          'Image-Imlib2',
+          'Image-WorldMap',
+          'Java-JVM-Classfile',
+          'Language-Functional',
+          'MP3-ID3Lib',
+          'Mac-EyeTV',
+          'MealMaster',
+          'Messaging-Courier',
+          'Module-Packaged',
+          'Net-Amazon-AWIS',
+          'Net-Amazon-SimpleQueue',
+          'Net-DAV-Server',
+          'Net-DPAP-Client',
+          'Net-OpenDHT',
+          'OpenFrame-Segment-Apache',
+          'OpenFrame-Segment-Apache2',
+          'PPI-Metric-Basic',
+          'Parse-BACKPAN-Packages',
+          'Parse-CPAN-Authors',
+          'Parse-CPAN-Packages',
+          'Search-Mousse',
+          'String-Koremutake',
+          'Template-Plugin-Page',
+          'Test-Expect',
+          'Test-WWW-Mechanize-Catalyst',
+          'Tie-GHash',
+          'Tree-Ternary_XS',
+          'WWW-Gazetteer',
+          'WWW-Gazetteer-Calle',
+          'WWW-Gazetteer-FallingRain',
+          'WWW-Gazetteer-Getty',
+          'WWW-Mechanize-Timed',
+          'WWW-Search-Google',
+          'XML-asData',
+         ) {
+  ok(scalar(grep { $_ eq $dist } @acmes), "LBROCARD has $dist");
+}
+
+my @pmisons = $p->distributions_by('PMISON');
+foreach my $dist (
+          'File-Type',
+          'File-Find-Rule-Type',
+         ) {
+  ok(scalar(grep { $_ eq $dist } @pmisons), "PMISON has $dist");
+}
+
+my @authors = $p->authors;
+ok(scalar(@authors) > 2500);
+foreach my $author (
+          'LBROCARD',
+          'PMISON',
+         ) {
+  ok(scalar(grep { $_ eq $author } @authors), "$author is an author");
+}
+
+#use Data::Dumper; warn Dumper \@authors;
+# use YAML; warn Dump \@acmes;
 

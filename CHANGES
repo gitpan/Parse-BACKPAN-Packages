@@ -1,4 +1,10 @@
 Revision history for Perl module Parse::BACKPAN::Packages:
 
+0.30 Thu Jun  9 16:27:36 BST 2005
+  - added distributions_by method, which returns a list of distribution
+    names representing all the distributions that an author has uploaded
+  - added authors method
+  - fix a bug where distributions was returning subdistributions too
+
 0.29 Mon Apr 11 19:32:22 BST 2005
   - first release
