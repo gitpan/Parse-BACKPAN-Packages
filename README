@@ -27,6 +27,8 @@ DESCRIPTION
     without the deletions. This module provides an index of BACKPAN and some
     handy functions.
 
+    The data is fetched from the net and cached for an hour.
+
 METHODS
   new
     The constructor downloads a ~1M index file from the web and parses it,

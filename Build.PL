@@ -3,9 +3,10 @@ use strict;
 
 my $build = Module::Build->new(
   create_makefile_pl => 'traditional',
-  license     => 'perl',
-  module_name => 'Parse::BACKPAN::Packages',
-  requires    => {
+  license            => 'perl',
+  module_name        => 'Parse::BACKPAN::Packages',
+  requires           => {
+    'App::Cache'            => '0',
     'CPAN::DistnameInfo'    => '0',
     'Class::Accessor::Fast' => '0',
     'Compress::Zlib'        => '0',

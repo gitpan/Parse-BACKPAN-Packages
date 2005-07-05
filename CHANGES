@@ -1,5 +1,8 @@
 Revision history for Perl module Parse::BACKPAN::Packages:
 
+0.31 Tue Jul  5 00:48:46 BST 2005
+  - we now cache the data for an hour using App::Cache
+
 0.30 Thu Jun  9 16:27:36 BST 2005
   - added distributions_by method, which returns a list of distribution
     names representing all the distributions that an author has uploaded

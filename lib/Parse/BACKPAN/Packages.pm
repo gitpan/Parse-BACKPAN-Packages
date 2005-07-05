@@ -1,7 +1,6 @@
 package Parse::BACKPAN::Packages;
 use strict;
-use base qw( Class::Accessor::Fast );
-__PACKAGE__->mk_accessors(qw( data files dist_by_data ));
+use App::Cache;
 use CPAN::DistnameInfo;
 use Compress::Zlib;
 use IO::File;
@@ -9,55 +8,52 @@ use IO::Zlib;
 use LWP::UserAgent;
 use Parse::BACKPAN::Packages::File;
 use Parse::BACKPAN::Packages::Distribution;
-use vars qw($VERSION);
-$VERSION = '0.30';
+use base qw( Class::Accessor::Fast );
+__PACKAGE__->mk_accessors(qw( files dists_by ));
+our $VERSION = '0.31';
 
 sub new {
-  my $class    = shift;
-  my $filename = shift;
+  my $class = shift;
+  my $self  = $class->SUPER::new(@_);
 
-  my $self = {};
-  bless $self, $class;
-
-  if ($filename) {
-    my $fh = IO::Zlib->new($filename, "rb")
-      || die "Failed to read $filename: $!";
-    $self->data(join '', <$fh>);
-    $fh->close;
-  } else {
-    my $url = "http://www.astray.com/tmp/backpan.txt.gz";
-    my $ua  = LWP::UserAgent->new;
-    $ua->timeout(180);
-    my $response = $ua->get($url);
-
-    if ($response->is_success) {
-      my $gzipped = $response->content;
-      my $data    = Compress::Zlib::memGunzip($gzipped);
-      die "Error uncompressing data from $url" unless $data;
-      $self->data($data);
-    } else {
-      die "Error fetching $url";
-    }
-  }
-  $self->_parse;
+  my $cache = App::Cache->new({ ttl => 60 * 60 });
+  $self->files($cache->get_code('files', sub { $self->_init_files() }));
+  $self->dists_by($cache->get_code('dists_by', sub { $self->_init_dists_by() }));
 
   return $self;
 }
 
-sub _parse {
+sub _init_files {
   my $self = shift;
-  my %files;
+  my $files;
 
-  foreach my $line (split "\n", $self->data) {
+  my $data;
+  my $url = "http://www.astray.com/tmp/backpan.txt.gz";
+  my $ua  = LWP::UserAgent->new;
+  $ua->timeout(180);
+  my $response = $ua->get($url);
+
+  if ($response->is_success) {
+    my $gzipped = $response->content;
+    $data = Compress::Zlib::memGunzip($gzipped);
+    die "Error uncompressing data from $url" unless $data;
+  } else {
+    die "Error fetching $url";
+  }
+
+  foreach my $line (split "\n", $data) {
     my ($prefix, $date, $size) = split ' ', $line;
     next unless $size;
-    my $file = Parse::BACKPAN::Packages::File->new;
-    $file->prefix($prefix);
-    $file->date($date);
-    $file->size($size);
-    $files{$prefix} = $file;
+    my $file = Parse::BACKPAN::Packages::File->new(
+      {
+        prefix => $prefix,
+        date   => $date,
+        size   => $size,
+      }
+    );
+    $files->{$prefix} = $file;
   }
-  $self->files(\%files);
+  return $files;
 }
 
 sub file {
@@ -80,18 +76,21 @@ sub distributions {
 
   my @dists;
   foreach my $file (@files) {
-    my $i = CPAN::DistnameInfo->new($file->prefix);
+    my $i    = CPAN::DistnameInfo->new($file->prefix);
     my $dist = $i->dist;
     next unless $dist eq $name;
-    my $d = Parse::BACKPAN::Packages::Distribution->new;
-    $d->prefix($file->prefix);
-    $d->date($file->date);
-    $d->dist($dist);
-    $d->version($i->version);
-    $d->maturity($i->maturity);
-    $d->filename($i->filename);
-    $d->cpanid($i->cpanid);
-    $d->distvname($i->distvname);
+    my $d = Parse::BACKPAN::Packages::Distribution->new(
+      {
+        prefix    => $file->prefix,
+        date      => $file->date,
+        dist      => $dist,
+        version   => $i->version,
+        maturity  => $i->maturity,
+        filename  => $i->filename,
+        cpanid    => $i->cpanid,
+        distvname => $i->distvname,
+      }
+    );
     push @dists, $d;
   }
 
@@ -101,22 +100,20 @@ sub distributions {
 sub distributions_by {
   my ($self, $author) = @_;
 
-  my $dist_by = $self->_dist_by;
+  my $dists_by = $self->dists_by;
 
-  my @dists = @{ $dist_by->{$author} };
+  my @dists = @{ $dists_by->{$author} };
   return sort @dists;
 }
 
 sub authors {
   my $self    = shift;
-  my $dist_by = $self->_dist_by;
-  return sort keys %$dist_by;
+  my $dists_by = $self->dists_by;
+  return sort keys %$dists_by;
 }
 
-sub _dist_by {
+sub _init_dists_by {
   my ($self) = shift;
-  return $self->dist_by_data if $self->dist_by_data;
-
   my @files;
 
   while (my ($prefix, $file) = each %{ $self->files }) {
@@ -140,7 +137,6 @@ sub _dist_by {
     push @{ $dists_by->{$by} }, $dist;
   }
 
-  $self->dist_by_data($dists_by);
   return $dists_by;
 }
 
@@ -189,6 +185,8 @@ let CPAN have the latest version of a module. BACKPAN is where these
 deleted modules are backed up. It's more like a full CPAN mirror, only
 without the deletions. This module provides an index of BACKPAN and
 some handy functions.
+
+The data is fetched from the net and cached for an hour.
 
 =head1 METHODS
 
