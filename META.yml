@@ -1,24 +1,8 @@
----
+--- #YAML:1.0
 name: Parse-BACKPAN-Packages
-version: 0.31
+version: 0.32
 author:
   - Leon Brocard <acme@astray.com>
 abstract: Provide an index of BACKPAN
 license: perl
-requires:
-  App::Cache: 0
-  CPAN::DistnameInfo: 0
-  Class::Accessor::Fast: 0
-  Compress::Zlib: 0
-  IO::Zlib: 0
-  LWP::UserAgent: 0
-  Test::More: 0
-provides:
-  Parse::BACKPAN::Packages:
-    file: lib/Parse/BACKPAN/Packages.pm
-    version: 0.31
-  Parse::BACKPAN::Packages::Distribution:
-    file: lib/Parse/BACKPAN/Packages/Distribution.pm
-  Parse::BACKPAN::Packages::File:
-    file: lib/Parse/BACKPAN/Packages/File.pm
-generated_by: Module::Build version 0.261
+generated_by: Module::Build version 0.2611, without YAML.pm

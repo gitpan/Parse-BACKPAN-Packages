@@ -1,5 +1,8 @@
 Revision history for Perl module Parse::BACKPAN::Packages:
 
+0.32 Tue Jan 31 10:05:49 GMT 2006
+  - update tests to show that I've passed Net::DAV::Server onto someone else
+
 0.31 Tue Jul  5 00:48:46 BST 2005
   - we now cache the data for an hour using App::Cache
 

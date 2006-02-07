@@ -1,7 +1,7 @@
 #!perl
 use strict;
 use warnings;
-use Test::More tests => 85;
+use Test::More tests => 84;
 use lib 'lib';
 use_ok("Parse::BACKPAN::Packages");
 
@@ -73,7 +73,6 @@ foreach my $dist (
           'Module-Packaged',
           'Net-Amazon-AWIS',
           'Net-Amazon-SimpleQueue',
-          'Net-DAV-Server',
           'Net-DPAP-Client',
           'Net-OpenDHT',
           'OpenFrame-Segment-Apache',

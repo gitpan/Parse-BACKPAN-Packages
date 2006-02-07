@@ -10,7 +10,7 @@ use Parse::BACKPAN::Packages::File;
 use Parse::BACKPAN::Packages::Distribution;
 use base qw( Class::Accessor::Fast );
 __PACKAGE__->mk_accessors(qw( files dists_by ));
-our $VERSION = '0.31';
+our $VERSION = '0.32';
 
 sub new {
   my $class = shift;
