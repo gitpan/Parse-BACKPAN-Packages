@@ -1,6 +1,6 @@
 ---
 name: Parse-BACKPAN-Packages
-version: 0.33
+version: 0.34
 author:
   - 'Leon Brocard <acme@astray.com>'
 abstract: Provide an index of BACKPAN
@@ -18,7 +18,7 @@ requires:
 provides:
   Parse::BACKPAN::Packages:
     file: lib/Parse/BACKPAN/Packages.pm
-    version: 0.33
+    version: 0.34
   Parse::BACKPAN::Packages::Distribution:
     file: lib/Parse/BACKPAN/Packages/Distribution.pm
   Parse::BACKPAN::Packages::File:

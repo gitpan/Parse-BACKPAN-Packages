@@ -1,5 +1,16 @@
 Revision history for Perl module Parse::BACKPAN::Packages:
 
+0.34 Thu Jan 15 19:54:40 GMT 2009
+  - update the tests
+  - perltidy
+  - add proxy support (patch by JDHEDDEN)
+  - amend distributions_by so that it returns an empty list if no
+    author or a new author is passed (patch by BARBIE)
+  - credit all authors/maintainers/release managers of a particular
+    distribution (patch by BARBIE)
+  - add a human-readable license
+  - use warnings
+
 0.33 Sun Jun  8 10:34:48 BST 2008
   - update the tests
 

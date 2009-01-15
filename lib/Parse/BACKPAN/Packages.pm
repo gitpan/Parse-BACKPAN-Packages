@@ -1,5 +1,6 @@
 package Parse::BACKPAN::Packages;
 use strict;
+use warnings;
 use App::Cache;
 use CPAN::DistnameInfo;
 use Compress::Zlib;
@@ -10,144 +11,143 @@ use Parse::BACKPAN::Packages::File;
 use Parse::BACKPAN::Packages::Distribution;
 use base qw( Class::Accessor::Fast );
 __PACKAGE__->mk_accessors(qw( files dists_by ));
-our $VERSION = '0.33';
+our $VERSION = '0.34';
 
 sub new {
-  my $class = shift;
-  my $self  = $class->SUPER::new(@_);
+    my $class = shift;
+    my $self  = $class->SUPER::new(@_);
 
-  my $cache = App::Cache->new({ ttl => 60 * 60 });
-  $self->files($cache->get_code('files', sub { $self->_init_files() }));
-  $self->dists_by($cache->get_code('dists_by', sub { $self->_init_dists_by() }));
+    my $cache = App::Cache->new( { ttl => 60 * 60 } );
+    $self->files( $cache->get_code( 'files', sub { $self->_init_files() } ) );
+    $self->dists_by(
+        $cache->get_code( 'dists_by', sub { $self->_init_dists_by() } ) );
 
-  return $self;
+    return $self;
 }
 
 sub _init_files {
-  my $self = shift;
-  my $files;
+    my $self = shift;
+    my $files;
 
-  my $data;
-  my $url = "http://www.astray.com/tmp/backpan.txt.gz";
-  my $ua  = LWP::UserAgent->new;
-  $ua->timeout(180);
-  my $response = $ua->get($url);
+    my $data;
+    my $url = "http://www.astray.com/tmp/backpan.txt.gz";
+    my $ua  = LWP::UserAgent->new;
+    $ua->env_proxy();
+    $ua->timeout(180);
+    my $response = $ua->get($url);
 
-  if ($response->is_success) {
-    my $gzipped = $response->content;
-    $data = Compress::Zlib::memGunzip($gzipped);
-    die "Error uncompressing data from $url" unless $data;
-  } else {
-    die "Error fetching $url";
-  }
+    if ( $response->is_success ) {
+        my $gzipped = $response->content;
+        $data = Compress::Zlib::memGunzip($gzipped);
+        die "Error uncompressing data from $url" unless $data;
+    } else {
+        die "Error fetching $url";
+    }
 
-  foreach my $line (split "\n", $data) {
-    my ($prefix, $date, $size) = split ' ', $line;
-    next unless $size;
-    my $file = Parse::BACKPAN::Packages::File->new(
-      {
-        prefix => $prefix,
-        date   => $date,
-        size   => $size,
-      }
-    );
-    $files->{$prefix} = $file;
-  }
-  return $files;
+    foreach my $line ( split "\n", $data ) {
+        my ( $prefix, $date, $size ) = split ' ', $line;
+        next unless $size;
+        my $file = Parse::BACKPAN::Packages::File->new(
+            {   prefix => $prefix,
+                date   => $date,
+                size   => $size,
+            }
+        );
+        $files->{$prefix} = $file;
+    }
+    return $files;
 }
 
 sub file {
-  my ($self, $prefix) = @_;
-  return $self->files->{$prefix};
+    my ( $self, $prefix ) = @_;
+    return $self->files->{$prefix};
 }
 
 sub distributions {
-  my ($self, $name) = @_;
-  my @files;
+    my ( $self, $name ) = @_;
+    my @files;
 
-  while (my ($prefix, $file) = each %{ $self->files }) {
-    my $prefix = $file->prefix;
-    next unless $prefix =~ m{\/$name-};
-    next if $prefix =~ /\.(readme|meta)$/;
-    push @files, $file;
-  }
+    while ( my ( $prefix, $file ) = each %{ $self->files } ) {
+        my $prefix = $file->prefix;
+        next unless $prefix =~ m{\/$name-};
+        next if $prefix =~ /\.(readme|meta)$/;
+        push @files, $file;
+    }
 
-  @files = sort { $a->date <=> $b->date } @files;
+    @files = sort { $a->date <=> $b->date } @files;
 
-  my @dists;
-  foreach my $file (@files) {
-    my $i    = CPAN::DistnameInfo->new($file->prefix);
-    my $dist = $i->dist;
-    next unless $dist eq $name;
-    my $d = Parse::BACKPAN::Packages::Distribution->new(
-      {
-        prefix    => $file->prefix,
-        date      => $file->date,
-        dist      => $dist,
-        version   => $i->version,
-        maturity  => $i->maturity,
-        filename  => $i->filename,
-        cpanid    => $i->cpanid,
-        distvname => $i->distvname,
-      }
-    );
-    push @dists, $d;
-  }
+    my @dists;
+    foreach my $file (@files) {
+        my $i    = CPAN::DistnameInfo->new( $file->prefix );
+        my $dist = $i->dist;
+        next unless $dist eq $name;
+        my $d = Parse::BACKPAN::Packages::Distribution->new(
+            {   prefix    => $file->prefix,
+                date      => $file->date,
+                dist      => $dist,
+                version   => $i->version,
+                maturity  => $i->maturity,
+                filename  => $i->filename,
+                cpanid    => $i->cpanid,
+                distvname => $i->distvname,
+            }
+        );
+        push @dists, $d;
+    }
 
-  return @dists;
+    return @dists;
 }
 
 sub distributions_by {
-  my ($self, $author) = @_;
+    my ( $self, $author ) = @_;
+    return unless $author;
 
-  my $dists_by = $self->dists_by;
+    my $dists_by = $self->dists_by;
 
-  my @dists = @{ $dists_by->{$author} };
-  return sort @dists;
+    my @dists = @{ $dists_by->{$author} || [] };
+    return sort @dists;
 }
 
 sub authors {
-  my $self    = shift;
-  my $dists_by = $self->dists_by;
-  return sort keys %$dists_by;
+    my $self     = shift;
+    my $dists_by = $self->dists_by;
+    return sort keys %$dists_by;
 }
 
 sub _init_dists_by {
-  my ($self) = shift;
-  my @files;
+    my ($self) = shift;
+    my @files;
 
-  while (my ($prefix, $file) = each %{ $self->files }) {
-    my $prefix = $file->prefix;
-    next if $prefix =~ /\.(readme|meta)$/;
-    push @files, $file;
-  }
+    while ( my ( $prefix, $file ) = each %{ $self->files } ) {
+        my $prefix = $file->prefix;
+        next if $prefix =~ /\.(readme|meta)$/;
+        push @files, $file;
+    }
 
-  @files = sort { $a->date <=> $b->date } @files;
+    @files = sort { $a->date <=> $b->date } @files;
 
-  my $dist_by;
-  foreach my $file (@files) {
-    my $i = CPAN::DistnameInfo->new($file->prefix);
-    my ($dist, $cpanid) = ($i->dist, $i->cpanid);
-    next unless $dist && $cpanid;
-    $dist_by->{$dist} = $cpanid;
-  }
+    my $dist_by;
+    foreach my $file (@files) {
+        my $i = CPAN::DistnameInfo->new( $file->prefix );
+        my ( $dist, $cpanid ) = ( $i->dist, $i->cpanid );
+        next unless $dist && $cpanid;
 
-  my $dists_by;
-  while (my ($dist, $by) = each %$dist_by) {
-    push @{ $dists_by->{$by} }, $dist;
-  }
+        $dist_by->{$cpanid}{$dist}++;
+    }
 
-  return $dists_by;
+    my %dists_by = map { $_ => [ keys %{ $dist_by->{$_} } ] } keys %$dist_by;
+
+    return \%dists_by;
 }
 
 sub size {
-  my $self = shift;
-  my $size;
+    my $self = shift;
+    my $size;
 
-  foreach my $file (values %{ $self->files }) {
-    $size += $file->size;
-  }
-  return $size;
+    foreach my $file ( values %{ $self->files } ) {
+        $size += $file->size;
+    }
+    return $size;
 }
 
 1;
@@ -247,7 +247,9 @@ Leon Brocard <acme@astray.com>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2005, Leon Brocard
+Copyright (C) 2005-9, Leon Brocard
+
+=head1 LICENSE
 
 This module is free software; you can redistribute it or modify it under
 the same terms as Perl itself.
