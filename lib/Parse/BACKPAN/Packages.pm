@@ -11,7 +11,7 @@ use Parse::BACKPAN::Packages::File;
 use Parse::BACKPAN::Packages::Distribution;
 use base qw( Class::Accessor::Fast );
 __PACKAGE__->mk_accessors(qw( files dists_by ));
-our $VERSION = '0.34';
+our $VERSION = '0.35';
 
 sub new {
     my $class = shift;
@@ -78,8 +78,8 @@ sub distributions {
 
     my @dists;
     foreach my $file (@files) {
-        my $i    = CPAN::DistnameInfo->new( $file->prefix );
-        my $dist = $i->dist;
+        my $i = CPAN::DistnameInfo->new( $file->prefix );
+        my $dist = $i->dist || '';
         next unless $dist eq $name;
         my $d = Parse::BACKPAN::Packages::Distribution->new(
             {   prefix    => $file->prefix,
